@@ -26,8 +26,9 @@
 async function fetchGoogleData() {
   const results = await Promise.allSettled(
     CONFIG.VENUES.map(async venue => {
-      const response = await fetch(`/api/google-place?placeId=${venue.placeId}`);
-
+      const response = await fetch(
+  `${CONFIG.TRIPADVISOR_WORKER_URL}/${venueConfig.taLocationId}`
+);
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}));
         throw new Error(errorBody.error || `HTTP ${response.status}`);
