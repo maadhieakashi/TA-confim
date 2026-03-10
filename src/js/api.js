@@ -24,8 +24,7 @@
 async function fetchGoogleData() {
   const results = await Promise.allSettled(
     CONFIG.VENUES.map(async venue => {
-      const response = await fetch(`/api/google-place?placeId=${venue.placeId}`);
-
+      const response = await fetch(`https://ella-eats-ta.your-name.workers.dev?locationId=${venueConfig.taLocationId}`);
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}));
         throw new Error(errorBody.error || `HTTP ${response.status}`);
