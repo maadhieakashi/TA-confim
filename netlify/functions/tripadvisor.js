@@ -1,72 +1,54 @@
 // ============================================================
-//  ELLA EATS — NETLIFY FUNCTION: TripAdvisor Proxy
+//  ELLA EATS — EDGE FUNCTION: TripAdvisor Proxy
 //
-//  Routes TripAdvisor API calls server-side to keep the key
-//  out of the browser. The key is stored in Netlify Environment
-//  Variables as TA_API_KEY.
+//  Edge Functions run at Netlify's CDN layer, not a Node server.
+//  They do not attach Origin/Referer headers that trigger
+//  TripAdvisor's free plan 403 block.
 //
-//  The TripAdvisor free plan blocks server-side calls that
-//  include an Origin or Referer header. This function omits
-//  those headers so the request appears as a direct API call.
-//
-//  Called by: src/js/api.js → fetchTripAdvisorData()
-//  Endpoint:  /api/tripadvisor?locationId=XXXXXXX
+//  API key is stored in Netlify Environment Variables as TA_API_KEY.
+//  It never reaches the browser.
 // ============================================================
 
-exports.handler = async function (event) {
-  const { locationId } = event.queryStringParameters || {};
+export default async function handler(request, context) {
+  const url    = new URL(request.url);
+  const locationId = url.searchParams.get('locationId');
 
   if (!locationId) {
-    return {
-      statusCode: 400,
-      body: JSON.stringify({ error: 'Missing locationId parameter' })
-    };
+    return new Response(
+      JSON.stringify({ error: 'Missing locationId' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
   }
 
-  const apiKey = process.env.TA_API_KEY;
+  const apiKey = Deno.env.get('TA_API_KEY');
   if (!apiKey) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'TA_API_KEY environment variable not set' })
-    };
+    return new Response(
+      JSON.stringify({ error: 'TA_API_KEY not configured' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
+
+  const taUrl = `https://api.content.tripadvisor.com/api/v1/location/${locationId}/details`
+    + `?key=${apiKey}&language=en&currency=LKR`;
 
   try {
-    const url = `https://api.content.tripadvisor.com/api/v1/location/${locationId}/details`
-      + `?key=${apiKey}&language=en&currency=LKR`;
-
-    // IMPORTANT: Do not forward Origin or Referer headers.
-    // TripAdvisor free plan returns 403 when these are present
-    // on server-side requests. Omitting them allows the call through.
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'accept': 'application/json'
-        // Origin and Referer intentionally omitted
-      }
+    const response = await fetch(taUrl, {
+      headers: { 'accept': 'application/json' }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => '');
-      console.error(`TripAdvisor API error ${response.status} for locationId ${locationId}: ${errorText}`);
-      return {
-        statusCode: response.status,
-        body: JSON.stringify({ error: `TripAdvisor API returned ${response.status}` })
-      };
-    }
+    const body = await response.text();
 
-    const data = await response.json();
-    return {
-      statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    };
+    return new Response(body, {
+      status: response.status,
+      headers: { 'Content-Type': 'application/json' }
+    });
 
   } catch (err) {
-    console.error(`TripAdvisor proxy error for locationId ${locationId}:`, err.message);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message })
-    };
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
   }
-};
+}
+
+export const config = { path: '/api/tripadvisor' };

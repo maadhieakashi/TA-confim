@@ -1,6 +1,7 @@
 [build]
   publish = "."
   functions = "netlify/functions"
+  edge_functions = "netlify/edge-functions"
 
 [[redirects]]
   from = "/api/google-place"
@@ -10,11 +11,6 @@
 [[redirects]]
   from = "/api/google-place-photo"
   to = "/.netlify/functions/google-place-photo"
-  status = 200
-
-[[redirects]]
-  from = "/api/tripadvisor"
-  to = "/.netlify/functions/tripadvisor"
   status = 200
 
 [[redirects]]
