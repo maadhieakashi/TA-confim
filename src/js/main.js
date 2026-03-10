@@ -57,7 +57,7 @@ async function init() {
     // Step 2: Fetch TripAdvisor ratings aligned with Google venues
     setTripAdvisorStatus('loading', 'loading', 'Fetching ratings...');
     const taData = await fetchTripAdvisorData(googleData);
-    const taLiveCount = taData.filter(t => t?.source === 'tripadvisor_api').length;
+    const taLiveCount = taData.filter(t => t !== null && t !== undefined).length;
 
     // Step 3: Merge datasets and calculate composite scores
     const merged = mergeAndScore(googleData, taData);

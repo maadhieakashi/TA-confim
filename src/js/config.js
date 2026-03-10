@@ -16,7 +16,7 @@ const CONFIG = {
   // TripAdvisor data is fetched via a Cloudflare Worker proxy.
   // The API key is stored in the Worker's environment variables.
   // Replace the URL below with your own Cloudflare Worker URL after deploying.
-  TRIPADVISOR_WORKER_URL: 'https://orange-cherry-1667.shanayaedhirisinghe67.workers.dev/',
+TRIPADVISOR_WORKER_URL: 'https://orange-cherry-1667.shanayaedhirisinghe67.workers.dev',
   TRIPADVISOR_ENABLED:    true,
 
   // ── Composite Score Formula Weights ──────────────────────
