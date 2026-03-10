@@ -1,13 +1,15 @@
 // ============================================================
 //  ELLA EATS — API MODULE
-//  Handles all external data fetching via Netlify serverless functions.
+//  Handles all external data fetching.
 //
-//  Google Places API calls are routed through /api/google-place
-//  to protect the API key (stored in Netlify Environment Variables).
+//  Google Places: routed through /api/google-place
+//    → Netlify serverless function
+//    → key stored in Netlify Environment Variables (GOOGLE_API_KEY)
 //
-//  TripAdvisor API calls are routed through /api/tripadvisor
-//  to protect the key (stored in Netlify Environment Variables as TA_API_KEY).
-//  The key is never sent to the browser.
+//  TripAdvisor: routed through Cloudflare Worker proxy
+//    → key stored in Cloudflare Worker Environment Variables (TA_API_KEY)
+//    → key never reaches the browser
+//    → Worker URL stored in CONFIG.TRIPADVISOR_WORKER_URL
 // ============================================================
 
 
@@ -24,7 +26,8 @@
 async function fetchGoogleData() {
   const results = await Promise.allSettled(
     CONFIG.VENUES.map(async venue => {
-      const response = await fetch(`https://ella-eats-ta.your-name.workers.dev?locationId=${venueConfig.taLocationId}`);
+      const response = await fetch(`/api/google-place?placeId=${venue.placeId}`);
+
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}));
         throw new Error(errorBody.error || `HTTP ${response.status}`);
@@ -51,13 +54,13 @@ async function fetchGoogleData() {
 
 
 /**
- * Fetches TripAdvisor ratings for all venues via the server-side proxy.
+ * Fetches TripAdvisor ratings for all venues via the Cloudflare Worker proxy.
  *
- * All calls go through /api/tripadvisor (Netlify function) — the API key
- * is stored in Netlify Environment Variables and never reaches the browser.
+ * The Worker holds the TA_API_KEY in its own environment variables.
+ * The key is never sent to or visible in the browser at any point.
  *
  * Uses Promise.allSettled — venues without a taLocationId or that fail
- * the API call return null (handled gracefully by the scoring module).
+ * the Worker call return null (handled gracefully by the scoring module).
  *
  * @param {Object[]} googleVenues - Venues from fetchGoogleData()
  * @returns {Promise<(Object|null)[]>} Array aligned with googleVenues; null = no TA data
@@ -78,13 +81,13 @@ async function fetchTripAdvisorData(googleVenues) {
       const venueConfig = venueConfigMap[googleVenue.placeId];
       if (!venueConfig?.taLocationId) return null;
 
-      // Server-side proxy — API key never reaches the browser
+      // Call Cloudflare Worker proxy — TA_API_KEY stays inside the Worker
       const response = await fetch(
-        `/api/tripadvisor?locationId=${venueConfig.taLocationId}`
+        `${CONFIG.TRIPADVISOR_WORKER_URL}?locationId=${venueConfig.taLocationId}`
       );
 
       if (!response.ok) {
-        console.warn(`TripAdvisor proxy HTTP ${response.status} for ${googleVenue.name}`);
+        console.warn(`TripAdvisor Worker HTTP ${response.status} for ${googleVenue.name}`);
         return null;
       }
 
@@ -101,7 +104,7 @@ async function fetchTripAdvisorData(googleVenues) {
         ranking:     data.ranking_data?.ranking_string || '',
         cuisine:     (data.cuisine || []).map(c => c.name),
         webUrl:      data.web_url || '',
-        source:      'tripadvisor_api',
+        source:      'tripadvisor_worker',
       };
     })
   );

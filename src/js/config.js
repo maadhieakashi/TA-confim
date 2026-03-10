@@ -6,20 +6,18 @@
 //
 //  NOTE ON API KEYS:
 //  - Google API Key: stored in Netlify Environment Variables (GOOGLE_API_KEY)
-//  - TripAdvisor Key: stored in Netlify Environment Variables (TA_API_KEY)
-//    The TA free-tier plan permits client-side use; key is loaded via
-//    the /api/tripadvisor serverless function for additional security.
+//  - TripAdvisor Key: stored in Cloudflare Worker Environment Variables (TA_API_KEY)
+//    Routed through a Cloudflare Worker proxy — key never reaches the browser.
 // ============================================================
 
 const CONFIG = {
 
   // ── TripAdvisor Settings ───────────────────────────────────
-  // NOTE: The TripAdvisor free plan requires browser-side (client-side) API calls.
-  // Routing via a server-side proxy returns HTTP 403 on the free tier.
-  // Exposing this key here is the intended and documented usage for this plan.
-  // Reference: https://tripadvisor-content-api.readme.io/reference/overview
-  // If you upgrade to a paid plan, move this to a Netlify Environment Variable.
-  TRIPADVISOR_ENABLED: true,
+  // TripAdvisor data is fetched via a Cloudflare Worker proxy.
+  // The API key is stored in the Worker's environment variables.
+  // Replace the URL below with your own Cloudflare Worker URL after deploying.
+  TRIPADVISOR_WORKER_URL: 'https://orange-cherry-1667.shanayaedhirisinghe67.workers.dev/',
+  TRIPADVISOR_ENABLED:    true,
 
   // ── Composite Score Formula Weights ──────────────────────
   // Derived from questionnaire survey (Q8 — platform trust ratings):
