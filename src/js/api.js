@@ -8,8 +8,8 @@
 //
 //  TripAdvisor: routed through Cloudflare Worker proxy
 //    → key stored in Cloudflare Worker Environment Variables (TA_API_KEY)
+//    → Worker sends origin/referer headers TripAdvisor requires
 //    → key never reaches the browser
-//    → Worker URL stored in CONFIG.TRIPADVISOR_WORKER_URL
 // ============================================================
 
 
@@ -26,9 +26,8 @@
 async function fetchGoogleData() {
   const results = await Promise.allSettled(
     CONFIG.VENUES.map(async venue => {
-      const response = await fetch(
-  `${CONFIG.TRIPADVISOR_WORKER_URL}/${venueConfig.taLocationId}`
-);
+      const response = await fetch(`/api/google-place?placeId=${venue.placeId}`);
+
       if (!response.ok) {
         const errorBody = await response.json().catch(() => ({}));
         throw new Error(errorBody.error || `HTTP ${response.status}`);
@@ -57,8 +56,9 @@ async function fetchGoogleData() {
 /**
  * Fetches TripAdvisor ratings for all venues via the Cloudflare Worker proxy.
  *
- * The Worker holds the TA_API_KEY in its own environment variables.
- * The key is never sent to or visible in the browser at any point.
+ * The Worker holds TA_API_KEY in its own environment variables and sends
+ * the required origin/referer headers that TripAdvisor's free plan checks.
+ * The API key is never sent to or visible in the browser at any point.
  *
  * Uses Promise.allSettled — venues without a taLocationId or that fail
  * the Worker call return null (handled gracefully by the scoring module).

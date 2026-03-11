@@ -7,16 +7,16 @@
 //  NOTE ON API KEYS:
 //  - Google API Key: stored in Netlify Environment Variables (GOOGLE_API_KEY)
 //  - TripAdvisor Key: stored in Cloudflare Worker Environment Variables (TA_API_KEY)
-//    Routed through a Cloudflare Worker proxy — key never reaches the browser.
+//    Routed through Cloudflare Worker proxy — key never reaches the browser.
 // ============================================================
 
 const CONFIG = {
 
   // ── TripAdvisor Settings ───────────────────────────────────
-  // TripAdvisor data is fetched via a Cloudflare Worker proxy.
-  // The API key is stored in the Worker's environment variables.
-  // Replace the URL below with your own Cloudflare Worker URL after deploying.
-TRIPADVISOR_WORKER_URL: 'https://orange-cherry-1667.shanayaedhirisinghe67.workers.dev?locationId=2051648',
+  // TripAdvisor data is fetched via Cloudflare Worker proxy.
+  // The API key is stored in the Worker environment variables only.
+  // It is never exposed to the browser at any point.
+  TRIPADVISOR_WORKER_URL: 'https://orange-cherry-1667.shanayaedhirisinghe67.workers.dev',
   TRIPADVISOR_ENABLED:    true,
 
   // ── Composite Score Formula Weights ──────────────────────
