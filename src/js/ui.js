@@ -40,11 +40,11 @@ function showWarningBanner(message) {
  * @param {string} text      - Status label text
  */
 function setGoogleStatus(pillState, dotState, text) {
-  const pill = document.getElementById('gPill');
-  const dot  = document.getElementById('gDot');
+  const pill  = document.getElementById('gPill');
+  const dot   = document.getElementById('gDot');
   const label = document.getElementById('gTxt');
-  if (pill)  pill.dataset.s  = pillState;
-  if (dot)   dot.dataset.s   = dotState;
+  if (pill)  pill.dataset.s   = pillState;
+  if (dot)   dot.dataset.s    = dotState;
   if (label) label.textContent = text;
 }
 
@@ -58,8 +58,8 @@ function setTripAdvisorStatus(pillState, dotState, text) {
   const pill  = document.getElementById('taPill');
   const dot   = document.getElementById('taDot');
   const label = document.getElementById('taTxt');
-  if (pill)  pill.dataset.s  = pillState;
-  if (dot)   dot.dataset.s   = dotState;
+  if (pill)  pill.dataset.s   = pillState;
+  if (dot)   dot.dataset.s    = dotState;
   if (label) label.textContent = text;
 }
 
@@ -91,14 +91,19 @@ function setSourceBadge(elementId, type, text) {
  * @param {Object[]} venues - Full venue array
  */
 function updatePlatformStats(venues) {
-  const googleAvg = venues.reduce((sum, v) => sum + v.rating, 0) / venues.length;
+  const googleAvg      = venues.reduce((sum, v) => sum + v.rating, 0) / venues.length;
   const googleRevTotal = venues.reduce((sum, v) => sum + v.reviewCount, 0);
   document.getElementById('gAvg').textContent = googleAvg.toFixed(2) + ' / 5';
   document.getElementById('gRev').textContent = googleRevTotal.toLocaleString();
 
-  const taVenues = venues.filter(v => v.tripadvisor?.source === 'tripadvisor_api');
+  // Accept both tripadvisor_api (direct) and tripadvisor_worker (Cloudflare proxy)
+  const taVenues = venues.filter(v =>
+    v.tripadvisor?.source === 'tripadvisor_api' ||
+    v.tripadvisor?.source === 'tripadvisor_worker'
+  );
+
   if (taVenues.length) {
-    const taAvg = taVenues.reduce((sum, v) => sum + v.tripadvisor.rating, 0) / taVenues.length;
+    const taAvg      = taVenues.reduce((sum, v) => sum + v.tripadvisor.rating, 0) / taVenues.length;
     const taRevTotal = taVenues.reduce((sum, v) => sum + (v.tripadvisor.reviewCount || 0), 0);
     document.getElementById('taAvg').textContent = taAvg.toFixed(2) + ' / 5';
     document.getElementById('taRev').textContent = taRevTotal.toLocaleString();
@@ -116,8 +121,8 @@ function updatePlatformStats(venues) {
  */
 function updateSummaryBar(filteredVenues, allVenues) {
   if (!filteredVenues.length) return;
-  const topVenue = [...filteredVenues].sort((a, b) => b.combinedScore - a.combinedScore)[0];
-  const avgScore = filteredVenues.reduce((sum, v) => sum + v.combinedScore, 0) / filteredVenues.length;
+  const topVenue     = [...filteredVenues].sort((a, b) => b.combinedScore - a.combinedScore)[0];
+  const avgScore     = filteredVenues.reduce((sum, v) => sum + v.combinedScore, 0) / filteredVenues.length;
   const totalReviews = filteredVenues.reduce(
     (sum, v) => sum + v.reviewCount + (v.tripadvisor?.reviewCount || 0), 0
   );
@@ -159,7 +164,7 @@ function togglePanel(panelKey) {
 function openPhotoModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
-    modal.style.display = 'flex';
+    modal.style.display  = 'flex';
     document.body.style.overflow = 'hidden';
   }
 }
@@ -168,7 +173,7 @@ function openPhotoModal(modalId) {
 function closePhotoModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
-    modal.style.display = 'none';
+    modal.style.display  = 'none';
     document.body.style.overflow = '';
   }
 }
@@ -216,8 +221,8 @@ function ratingBar(percentage, colour) {
  * @returns {string} SVG HTML string
  */
 function scoreRing(score) {
-  const percentage = Math.min(score / 10, 1);
-  const radius     = 28;
+  const percentage    = Math.min(score / 10, 1);
+  const radius        = 28;
   const circumference = 2 * Math.PI * radius;
   const dashLength    = percentage * circumference;
   const colour        = `hsl(${Math.round(percentage * 120)},70%,55%)`;
@@ -235,15 +240,19 @@ function scoreRing(score) {
 /**
  * Renders the TripAdvisor row within a venue card's score breakdown.
  * Shows live data if connected, or an offline message if not.
+ * Accepts both tripadvisor_api (direct) and tripadvisor_worker (Cloudflare proxy).
  * @param {Object} venue - Merged venue object
  * @returns {string} HTML string
  */
 function renderTripAdvisorRow(venue) {
-  const taData   = venue.tripadvisor;
-  const taWeight = venue.tripWeight;
+  const taData    = venue.tripadvisor;
+  const taWeight  = venue.tripWeight;
   const threshold = venue._meta?.threshold || 50;
 
-  if (taData?.source === 'tripadvisor_api') {
+  const isLive = taData?.source === 'tripadvisor_api' ||
+                 taData?.source === 'tripadvisor_worker';
+
+  if (isLive) {
     return `<div class="brow">
       <div class="blabel">
         <span class="sdot" style="background:#34e0a1"></span>TripAdvisor
@@ -260,7 +269,7 @@ function renderTripAdvisorRow(venue) {
 
   const offlineReason = !CONFIG.TRIPADVISOR_ENABLED
     ? 'TRIPADVISOR_ENABLED is false in config.js'
-    : 'TA_API_KEY not in Netlify Environment Variables';
+    : 'Worker proxy not connected';
 
   return `<div class="brow dim">
     <div class="blabel">
@@ -278,11 +287,11 @@ function renderTripAdvisorRow(venue) {
  */
 function priceTag(level) {
   const priceMap = {
-    'PRICE_LEVEL_FREE':            { symbol: 'Free',  colour: '#22c55e' },
-    'PRICE_LEVEL_INEXPENSIVE':     { symbol: '£',     colour: '#22c55e' },
-    'PRICE_LEVEL_MODERATE':        { symbol: '££',    colour: '#f59e0b' },
-    'PRICE_LEVEL_EXPENSIVE':       { symbol: '£££',   colour: '#ef4444' },
-    'PRICE_LEVEL_VERY_EXPENSIVE':  { symbol: '££££',  colour: '#dc2626' },
+    'PRICE_LEVEL_FREE':           { symbol: 'Free', colour: '#22c55e' },
+    'PRICE_LEVEL_INEXPENSIVE':    { symbol: '£',    colour: '#22c55e' },
+    'PRICE_LEVEL_MODERATE':       { symbol: '££',   colour: '#f59e0b' },
+    'PRICE_LEVEL_EXPENSIVE':      { symbol: '£££',  colour: '#ef4444' },
+    'PRICE_LEVEL_VERY_EXPENSIVE': { symbol: '££££', colour: '#dc2626' },
   };
   const entry = priceMap[level];
   if (!entry) return '';
@@ -312,30 +321,31 @@ function buildPhotoUrl(photoName) {
  * @returns {string} HTML string for the venue card article element
  */
 function renderVenueCard(venue, rank) {
-  const taData     = venue.tripadvisor;
-  const isLiveTa   = taData?.source === 'tripadvisor_api';
-  const combined   = venue.combinedScore;
+  const taData       = venue.tripadvisor;
+  const isLiveTa     = taData?.source === 'tripadvisor_api' ||
+                       taData?.source === 'tripadvisor_worker';
+  const combined     = venue.combinedScore;
   const googleWeight = venue.googleWeight;
-  const taWeight   = venue.tripWeight;
-  const globalAvg  = venue._meta?.globalAvg || 4.74;
-  const threshold  = venue._meta?.threshold  || 50;
+  const taWeight     = venue.tripWeight;
+  const globalAvg    = venue._meta?.globalAvg || 4.74;
+  const threshold    = venue._meta?.threshold  || 50;
 
-  const typeTags  = (venue.venueTypes || []).map(t => `<span class="vtag">${t}</span>`).join('');
-  const cuisTags  = isLiveTa
+  const typeTags = (venue.venueTypes || []).map(t => `<span class="vtag">${t}</span>`).join('');
+  const cuisTags = isLiveTa
     ? (taData.cuisine || []).slice(0, 3).map(c => `<span class="vtag vtag-dim">${c}</span>`).join('')
     : '';
-  const openTag   = venue.isOpen === null ? ''
+  const openTag = venue.isOpen === null ? ''
     : venue.isOpen ? '<span class="open-y">Open</span>' : '<span class="open-n">Closed</span>';
-  const pTag      = priceTag(venue.priceLevel);
-  const imgUrl    = buildPhotoUrl(venue.photoName);
+  const pTag    = priceTag(venue.priceLevel);
+  const imgUrl  = buildPhotoUrl(venue.photoName);
 
   // Bayesian intermediate values for the calculation breakdown
-  const googleConf    = venue.reviewCount / (venue.reviewCount + threshold);
+  const googleConf     = venue.reviewCount / (venue.reviewCount + threshold);
   const googleAdjusted = bayesianAdjust(venue.rating, venue.reviewCount, globalAvg, threshold);
-  const taConf        = isLiveTa ? taData.reviewCount / (taData.reviewCount + threshold) : null;
-  const taAdjusted    = isLiveTa ? bayesianAdjust(taData.rating, taData.reviewCount, globalAvg, threshold) : null;
+  const taConf         = isLiveTa ? taData.reviewCount / (taData.reviewCount + threshold) : null;
+  const taAdjusted     = isLiveTa ? bayesianAdjust(taData.rating, taData.reviewCount, globalAvg, threshold) : null;
 
-  const calcPanelId = `calc-${rank}`;
+  const calcPanelId  = `calc-${rank}`;
   const photoPanelId = `photo-${rank}`;
 
   const googleContrib = (googleAdjusted * googleWeight).toFixed(3);

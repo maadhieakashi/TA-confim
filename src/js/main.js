@@ -57,6 +57,8 @@ async function init() {
     // Step 2: Fetch TripAdvisor ratings aligned with Google venues
     setTripAdvisorStatus('loading', 'loading', 'Fetching ratings...');
     const taData = await fetchTripAdvisorData(googleData);
+
+    // Count live TA venues — accepts both direct API and Worker proxy sources
     const taLiveCount = taData.filter(t => t !== null && t !== undefined).length;
 
     // Step 3: Merge datasets and calculate composite scores
