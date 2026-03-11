@@ -23,8 +23,8 @@ const CONFIG = {
   // Derived from questionnaire survey (Q8 — platform trust ratings):
   //   Google Maps trust score:   3.8 / 5  → proportional weight ≈ 60%
   //   TripAdvisor trust score:   2.9 / 5  → proportional weight ≈ 40%
-  DEFAULT_GOOGLE_WEIGHT: 0.60,
-  DEFAULT_TRIP_WEIGHT:   0.40,
+  DEFAULT_GOOGLE_WEIGHT: 0.57,
+  DEFAULT_TRIP_WEIGHT:   0.43,
 
   // ── Rating Scale Settings ─────────────────────────────────
   RATING_MAX:   5.0,   // Raw platform rating scale (out of 5)
